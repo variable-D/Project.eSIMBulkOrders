@@ -170,4 +170,5 @@ if (isset($resData['OUT1']) && is_array($resData['OUT1'])) {
 echo json_encode(["success" => true, "data" => $resData], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
 $conn->close();
+
 ?>
