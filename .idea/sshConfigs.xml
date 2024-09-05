@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" connectionConfig="{&quot;serverAliveInterval&quot;:300}" host="koreaesim.vps.phps.kr" id="90f3b6a9-1083-41ee-bff5-cfea052f36ec" port="22" customName="root@koreaesim.vps.phps.kr:22" nameFormat="CUSTOM" username="root" useOpenSSHConfig="true">
+        <option name="customName" value="root@koreaesim.vps.phps.kr:22" />
+      </sshConfig>
+      <sshConfig authType="PASSWORD" host="koreaesim.vps.phps.kr" id="b7ba4cb9-054c-43fa-b83c-d871a456d24e" port="22" nameFormat="DESCRIPTIVE" username="webmaster" useOpenSSHConfig="true" />
+      <sshConfig authType="PASSWORD" connectionConfig="{&quot;serverAliveInterval&quot;:300}" host="192.168.0.7" id="5458828f-c31c-405d-b02f-e3c9d406a965" port="22" customName="Prepia@ubuntuServer" nameFormat="CUSTOM" username="prepia" useOpenSSHConfig="true">
+        <option name="customName" value="Prepia@ubuntuServer" />
+      </sshConfig>
+    </configs>
+  </component>
+</project>

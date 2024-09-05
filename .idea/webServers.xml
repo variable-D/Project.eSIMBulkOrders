@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="eae6083a-83a0-4d27-8454-14a7c2c64257" name="root.koreaesim.com">
+        <fileTransfer accessType="SFTP" host="koreaesim.vps.phps.kr" port="22" sshConfigId="90f3b6a9-1083-41ee-bff5-cfea052f36ec" sshConfig="root@koreaesim.vps.phps.kr:22">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="342254b1-867d-44ad-8219-df463c5f3545" name="webmaster.koreaesim.com">
+        <fileTransfer accessType="SFTP" host="koreaesim.vps.phps.kr" port="22" sshConfigId="b7ba4cb9-054c-43fa-b83c-d871a456d24e" sshConfig="webmaster@koreaesim.vps.phps.kr:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="40b4bf21-9c9d-45c0-835c-29bb021887ad" name="Cafe24" url="http://ktmsim.ftp.cafe24.com">
+        <fileTransfer host="ktmsim.ftp.cafe24.com" port="21">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+      <webServer id="529ea4c4-291b-43b1-9ab5-3d356a32484d" name="Prepia@ubuntuServer">
+        <fileTransfer accessType="SFTP" host="192.168.0.7" port="22" sshConfigId="5458828f-c31c-405d-b02f-e3c9d406a965" sshConfig="Prepia@ubuntuServer">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
