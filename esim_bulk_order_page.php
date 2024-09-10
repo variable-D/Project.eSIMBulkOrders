@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -128,7 +127,7 @@
             })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`Server returned an error: ${response.status}`);
+                        throw new Error(`Server returned an error: ${response.status} - ${response.statusText}`);
                     }
                     return response.text(); // 응답을 텍스트로 처리
                 })
@@ -145,7 +144,6 @@
                     console.error('API 요청 실패:', error);
                     alert('API 요청 실패: ' + error.message);
                 });
-            window.location.reload();
         }
     </script>
 </body>

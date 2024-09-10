@@ -12,47 +12,27 @@ if ($conn->connect_error) {
 
 // *** 입력값 필터링 ***
 if (!isset($_REQUEST['RENTAL_FEE_PROD_ID'])) {
-    echo "요금제를 입력해주세요";
+    echo json_encode(["error" => "요금제를 입력해주세요"]);
     die;
 }
 
 $rental_fee_prod_id = $_REQUEST['RENTAL_FEE_PROD_ID'];
-$total_cnt = isset($_REQUEST['TOTAL_CNT']) ? $_REQUEST['TOTAL_CNT'] : 1;
+$total_cnt = isset($_REQUEST['TOTAL_CNT']) ? (int)$_REQUEST['TOTAL_CNT'] : 1;
 $order_num = isset($_REQUEST['ORDER_NUM']) ? $_REQUEST['ORDER_NUM'] : null;
 
 // eSIM 요금제 일 수 설정
 $esimDays = 0;
 switch ($rental_fee_prod_id) {
-    case "NA00007679":
-        $esimDays = 1;
-        break;
-    case "NA00007680":
-        $esimDays = 3;
-        break;
-    case "NA00007681":
-        $esimDays = 5;
-        break;
-    case "NA00008761":
-        $esimDays = 7;
-        break;
-    case "NA00007682":
-        $esimDays = 10;
-        break;
-    case "NA00008762":
-        $esimDays = 15;
-        break;
-    case "NA00007683":
-        $esimDays = 20;
-        break;
-    case "NA00007684":
-        $esimDays = 30;
-        break;
-    case "NA00008763":
-        $esimDays = 60;
-        break;
-    case "NA00008764":
-        $esimDays = 90;
-        break;
+    case "NA00007679": $esimDays = 1; break;
+    case "NA00007680": $esimDays = 3; break;
+    case "NA00007681": $esimDays = 5; break;
+    case "NA00008761": $esimDays = 7; break;
+    case "NA00007682": $esimDays = 10; break;
+    case "NA00008762": $esimDays = 15; break;
+    case "NA00007683": $esimDays = 20; break;
+    case "NA00007684": $esimDays = 30; break;
+    case "NA00008763": $esimDays = 60; break;
+    case "NA00008764": $esimDays = 90; break;
     default:
         $esimDays = 0;
         break;
@@ -70,7 +50,7 @@ $rsv_rcv_dtm = date("YmdHis");
 $nation_cd = 'GHA';
 $rcmndr_id = '1313033433';
 $cust_nm = 'PrepiaBulk';
-$passeport_num = 'KR'.$date;
+$passeport_num = 'KR' . $date;
 
 // 기본 데이터를 설정합니다.
 $data = array(
@@ -91,9 +71,7 @@ $data = array(
 
 // total_cnt 값을 사용하여 IN1 배열을 동적으로 생성합니다.
 $inArray = array();
-$totalCnt = (int)$data['total_cnt']; // total_cnt 값을 정수로 변환
-
-for ($i = 1; $i <= $totalCnt; $i++) {
+for ($i = 1; $i <= $total_cnt; $i++) {
     $suffix = str_pad($i, 2, '0', STR_PAD_LEFT); // 01, 02, 03 등으로 변환
     $rsv_vou_num = $order_num . '-' . $suffix; // 접미사 추가
     $inArray[] = array(
@@ -102,7 +80,6 @@ for ($i = 1; $i <= $totalCnt; $i++) {
         "rental_fee_prod_id" => $rental_fee_prod_id,
     );
 }
-// 생성된 배열을 $data 배열에 추가합니다.
 $data['IN1'] = $inArray;
 
 // JSON으로 변환
@@ -113,7 +90,7 @@ if ($jsonData === false) {
 }
 
 // API 전송
-$url = "https://www.skroaming.com/api/swinghub";  // 라이브
+$url = "https://www.skroaming.com/api/swinghub";
 
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $url);
@@ -128,8 +105,9 @@ $res = curl_exec($ch);
 
 if ($res === false) {
     $error_msg = curl_error($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    echo "cURL Error: " . $error_msg;
+    echo "cURL Error: " . $error_msg . " (HTTP Code: " . $http_code . ")";
     die;
 }
 
@@ -143,32 +121,37 @@ if ($resData === null && json_last_error() !== JSON_ERROR_NONE) {
     die;
 }
 
-// API 리턴값 오류 확인
-if (isset($resData['OUT1']) && is_array($resData['OUT1'])) {
-    foreach ($resData['OUT1'] as $index => $item) {
-        // IN1 배열의 rsv_vou_num 값을 사용
-        $rsv_vou_num = $data['IN1'][$index]['rsv_vou_num'];
-
-        // 각 $item을 처리하는 코드
-        $stmt = $conn->prepare("INSERT INTO esim_bulk_order_tb (order_num, final_json_data, esimDays) VALUES (?, ?, ?)");
-        $json_item_data = json_encode($item, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        $stmt->bind_param("sss", $rsv_vou_num, $json_item_data, $esimDays);
-
-        if (!$stmt->execute()) {
-            echo "DB 저장 오류: " . $stmt->error;
-            die;
-        }
-
-        $stmt->close();
-    }
-} else {
-    error_log("OUT1 데이터가 응답에 없습니다. 응답 내용: " . json_encode($resData));
-    die("API 응답에 OUT1 데이터가 없습니다.");
+// 응답 데이터 확인
+if (!isset($resData['OUT1'])) {
+    echo "OUT1 데이터가 응답에 없습니다. 응답 내용: " . json_encode($resData, JSON_UNESCAPED_UNICODE);
+    die;
 }
 
-// 정상적으로 처리된 경우
-echo json_encode(["success" => true, "data" => $resData], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+foreach ($resData['OUT1'] as $index => $item) {
+    $rsv_vou_num = $data['IN1'][$index]['rsv_vou_num'];
+    $rental_mst_num = $item['RENTAL_MST_NUM'];
+    $eqp_mdl_cd = $item['EQP_MDL_CD'];
+    $esim_mapping_id = $item['ESIM_MAPPING_ID'];
+    $eqp_ser_num = $item['EQP_SER_NUM'];
+    $roming_phon_num = $item['ROMING_PHON_NUM'];
+    $roming_num = $item['ROMING_NUM'];
 
+    // DB 저장
+    $stmt = $conn->prepare("INSERT INTO t_esim_bulk_order_tb (order_num, esimDays, rental_mst_num, eqp_mdl_cd, esim_mapping_id, eqp_ser_num, roming_phon_num, roming_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    if (!$stmt) {
+        echo "쿼리 준비 실패: " . $conn->error;
+        die;
+    }
+    $stmt->bind_param("ssssssss", $rsv_vou_num, $esimDays, $rental_mst_num, $eqp_mdl_cd, $esim_mapping_id, $eqp_ser_num, $roming_phon_num, $roming_num);
+
+    if (!$stmt->execute()) {
+        echo "DB 저장 오류: " . $stmt->error;
+        die;
+    }
+
+    $stmt->close();
+}
+
+echo json_encode(["success" => true, "data" => $resData], JSON_UNESCAPED_UNICODE);
 $conn->close();
-
 ?>
