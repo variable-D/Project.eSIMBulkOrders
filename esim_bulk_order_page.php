@@ -11,8 +11,6 @@ if( $varEndDt == 0 )
 
 $varSearch_order_id = isset($_REQUEST['search_order_id'])? trim($_REQUEST['search_order_id']):'';	// 주문번호/CTN/구입자명 검색
 $varSearch_shop_no = isset($_REQUEST['search_shop_no'])? trim($_REQUEST['search_shop_no']):''; // 쇼핑몰 검색
-
-
 ?>
 <!DOCTYPE html>
 <html>
@@ -105,11 +103,7 @@ $varSearch_shop_no = isset($_REQUEST['search_shop_no'])? trim($_REQUEST['search_
                     </ul>
                 </form>
             </div>
-
             <?php
-
-
-
             $conn = new mysqli($db_host, $db_user, $db_pwd, $db_category, $db_port);
             if ($conn->connect_error) {
                 die("DB 연결 실패: " . $conn->connect_error);
