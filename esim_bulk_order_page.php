@@ -5,10 +5,65 @@ include 'db_info.php';
 $varCallStep = isset($_REQUEST['CallStep']) ? $_REQUEST['CallStep'] : '0'; // CallStep: 0은 처음 로드, 1은 검색 버튼 클릭 시
 $varStartDt = isset($_REQUEST['start_dt']) ? $_REQUEST['start_dt'] : date("Y-m-d", time() - 86400); // 기본값: 1일 전
 $varEndDt = isset($_REQUEST['end_dt']) ? $_REQUEST['end_dt'] : date("Y-m-d", time()); // 기본값: 현재일
+$endDtWithTime = $varEndDt . " 23:59:59";
 $varSearch_order_id = isset($_REQUEST['search_order_id']) ? trim($_REQUEST['search_order_id']) : ''; // 주문번호/CTN 검색
 $varSearch_shop_no = isset($_REQUEST['search_shop_no']) ? trim($_REQUEST['search_shop_no']) : ''; // 쇼핑몰 검색
-?>
 
+// CSV 파일 다운로드 처리
+if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부를 확인
+    // DB 연결
+    $conn = new mysqli($db_host, $db_user, $db_pwd, $db_category, $db_port);
+    if ($conn->connect_error) {
+        die("DB 연결 실패: " . $conn->connect_error);
+    }
+    $conn->set_charset("utf8mb4");
+
+    // SQL 쿼리
+    $sql = "SELECT esimDays, esim_mapping_id, roming_phon_num, smdp_address, activation_code, created_at 
+            FROM t_esim_bulk_order_tb 
+            WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
+
+    if ($varSearch_order_id != '') {
+        $sql .= " AND (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
+    }
+    if ($varSearch_shop_no != '') {
+        $sql .= " AND shop = '$varSearch_shop_no'";
+    }
+    $sql .= " ORDER BY id DESC";
+
+    $result = $conn->query($sql);
+
+    // CSV 파일 생성
+    $filename = 'esim_bulk_order_' . date('Ymd') . '.csv';
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header("Content-Disposition: attachment; filename=\"$filename\"");
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $output = fopen('php://output', 'w');
+
+    // CSV 헤더 작성
+    fputcsv($output, ['days', 'ESIM Mapping ID', 'CTN', 'SM-DP Address', 'Activation Code']);
+
+    // 데이터를 CSV 파일에 입력
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            fputcsv($output, [
+                $row['esimDays'],
+                $row['esim_mapping_id'],
+                $row['roming_phon_num'],
+                $row['smdp_address'],
+                $row['activation_code']
+            ]);
+        }
+    }
+
+    fclose($output);
+    $conn->close();
+    exit; // 다운로드 후 더 이상의 처리가 없도록 종료
+}
+?>
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -62,34 +117,34 @@ $varSearch_shop_no = isset($_REQUEST['search_shop_no']) ? trim($_REQUEST['search
         </li>
     </ul>
 </form>
-
 <!-- Search Form -->
-<form name="input_form" action="<?= $_SERVER['PHP_SELF'] ?>" method="post">
-    <input type="hidden" name="CallStep" value="1">
-    <ul class="esim_list_sch2_ul es-col7">
-        <li>
-            <p class="esim_list_sch2-subj">날짜 범위</p>
-            <input type="text" name="start_dt" id="start_dt" value="<?= htmlspecialchars($varStartDt) ?>"/> ~
-            <input type="text" name="end_dt" id="end_dt" value="<?= htmlspecialchars($varEndDt) ?>"/>
-        </li>
-        <li>
-            <p class="esim_list_sch2-subj">주문번호/CTN</p>
-            <input type="text" name="search_order_id" value="<?= htmlspecialchars($varSearch_order_id) ?>" placeholder="주문번호/CTN"/>
-        </li>
-        <li>
-            <p class="esim_list_sch2-subj">납품처</p>
-            <select name="search_shop_no">
-                <option value="">선택</option>
-                <option value="1" <?= $varSearch_shop_no == '1' ? 'selected' : '' ?>>명동사</option>
-            </select>
-        </li>
-        <li>
-            <input type="submit" value="Search">
-        </li>
-    </ul>
-</form>
-
-<!-- CallStep이 1일 때만 데이터베이스 조회 -->
+<div class="esim_list_sch1">
+    <form name="input_form" action="<?= $_SERVER['PHP_SELF'] ?>" method="post">
+        <input type="hidden" name="CallStep" value="1">
+        <ul class="esim_list_sch1_ul">
+            <li>
+                <input type="text" name="start_dt" id="start_dt" value="<?= htmlspecialchars($varStartDt) ?>"/> ~
+                <input type="text" name="end_dt" id="end_dt" value="<?= htmlspecialchars($varEndDt) ?>"/>
+            </li>
+            <li>
+                <select name="search_shop_no">
+                    <option value="">납품처</option>
+                    <option value="1" <?= $varSearch_shop_no == '1' ? 'selected' : '' ?>>명동사</option>
+                </select>
+            </li>
+            <li>
+                <input type="text" name="search_order_id" value="<?= htmlspecialchars($varSearch_order_id) ?>" placeholder="주문번호/CTN"/>
+            </li>
+            <li>
+                <input class="sch1_submit-btn" type="submit" value="Search">
+            </li>
+            <li>
+                <button class="sch1_submit-btn" type="submit" name="download_csv">Csv-다운</button>
+            </li>
+        </ul>
+    </form>
+</div>
+<!-- 검색 결과 출력 -->
 <?php if ($varCallStep == "1"): ?>
     <?php
     // DB 연결
@@ -102,7 +157,7 @@ $varSearch_shop_no = isset($_REQUEST['search_shop_no']) ? trim($_REQUEST['search
     // SQL 쿼리
     $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop 
             FROM t_esim_bulk_order_tb 
-            WHERE created_at BETWEEN '$varStartDt' AND '$varEndDt'";
+            WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
 
     if ($varSearch_order_id != '') {
         $sql .= " AND (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
@@ -153,11 +208,12 @@ $varSearch_shop_no = isset($_REQUEST['search_shop_no']) ? trim($_REQUEST['search
                             ?>
                         </td>
                         <td align="center">
+                            <!-- 각 note 필드를 ID별로 묶어서 전송 -->
                             <textarea name="note[<?= $row['id'] ?>]" rows="3" cols="30"><?= htmlspecialchars($row["note"]) ?></textarea>
                         </td>
                         <td align="center">
                             <div class="list-mng-btn_wrap">
-                                <input type="submit" value="Modify" class="list-mng-btn btn-tp2 mt">
+                                <input type="submit" value="Modify" class="list-mng-btn btn-tp2 mt"> <!-- Modify 버튼 -->
                             </div>
                         </td>
                         <td align="center"><?= htmlspecialchars($row["created_at"]) ?></td>
