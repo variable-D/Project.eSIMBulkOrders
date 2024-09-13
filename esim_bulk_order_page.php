@@ -19,7 +19,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     $conn->set_charset("utf8mb4");
 
     // SQL 쿼리
-    $sql = "SELECT esimDays, esim_mapping_id, roming_phon_num, smdp_address, activation_code, created_at 
+    $sql = "SELECT order_num, esimDays, esim_mapping_id, roming_phon_num, smdp_address, activation_code, created_at 
             FROM t_esim_bulk_order_tb 
             WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
 
@@ -44,12 +44,13 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     $output = fopen('php://output', 'w');
 
     // CSV 헤더 작성
-    fputcsv($output, ['days', 'ESIM Mapping ID', 'CTN', 'SM-DP Address', 'Activation Code']);
+    fputcsv($output, ['Order Number','days', 'ESIM Mapping ID', 'CTN', 'SM-DP Address', 'Activation Code']);
 
     // 데이터를 CSV 파일에 입력
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
             fputcsv($output, [
+                $row['order_num'],
                 $row['esimDays'],
                 $row['esim_mapping_id'],
                 $row['roming_phon_num'],
