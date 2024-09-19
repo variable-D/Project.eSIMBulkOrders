@@ -9,6 +9,31 @@ $endDtWithTime = $varEndDt . " 23:59:59";
 $varSearch_order_id = isset($_REQUEST['search_order_id']) ? trim($_REQUEST['search_order_id']) : ''; // 주문번호/CTN 검색
 $varSearch_shop_no = isset($_REQUEST['search_shop_no']) ? trim($_REQUEST['search_shop_no']) : ''; // 쇼핑몰 검색
 
+// 노트 업데이트 처리
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note_update'])) {
+    $note_id = $_POST['note_id'];
+    $note_content = $_POST['note_content'];
+
+    // DB 연결
+    $conn = new mysqli($db_host, $db_user, $db_pwd, $db_category, $db_port);
+    if ($conn->connect_error) {
+        die("DB 연결 실패: " . $conn->connect_error);
+    }
+    $conn->set_charset("utf8mb4");
+
+    // 노트 업데이트 쿼리 실행
+    $stmt = $conn->prepare("UPDATE t_esim_bulk_order_tb SET note=? WHERE id=?");
+    $stmt->bind_param("si", $note_content, $note_id);
+
+    if ($stmt->execute()) {
+        // 업데이트 성공 시, 데이터를 다시 로드하도록 $varCallStep를 유지하고 넘어갑니다.
+        $stmt->close();
+        $conn->close();
+        // 여기서 리다이렉트 대신 업데이트된 데이터로 진행합니다.
+    } else {
+        echo "노트 업데이트 실패: " . $stmt->error;
+    }
+}
 // CSV 파일 다운로드 처리
 if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부를 확인
     // DB 연결
@@ -120,7 +145,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
 </form>
 <!-- Search Form -->
 <div class="esim_list_sch1">
-    <form name="input_form" action="<?= $_SERVER['PHP_SELF'] ?>" method="post">
+    <form name="input_form" action="<?= $_SERVER['PHP_SELF'] ?>" method="get">
         <input type="hidden" name="CallStep" value="1">
         <ul class="esim_list_sch1_ul">
             <li>
@@ -145,6 +170,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
         </ul>
     </form>
 </div>
+
 <!-- 검색 결과 출력 -->
 <?php if ($varCallStep == "1"): ?>
     <?php
@@ -155,77 +181,105 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     }
     $conn->set_charset("utf8mb4");
 
-    // SQL 쿼리
-    $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop 
-            FROM t_esim_bulk_order_tb 
-            WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
-
+    // SQL 쿼리 생성
     if ($varSearch_order_id != '') {
-        $sql .= " AND (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
-    }
-    if ($varSearch_shop_no != '') {
-        $sql .= " AND shop = '$varSearch_shop_no'";
+        // 주문번호나 CTN으로 검색 시 날짜 조건을 무시합니다.
+        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop 
+                FROM t_esim_bulk_order_tb 
+                WHERE (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
+        if ($varSearch_shop_no != '') {
+            $sql .= " AND shop = '$varSearch_shop_no'";
+        }
+    } else {
+        // 날짜로 검색
+        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop 
+                FROM t_esim_bulk_order_tb 
+                WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
+        if ($varSearch_shop_no != '') {
+            $sql .= " AND shop = '$varSearch_shop_no'";
+        }
     }
     $sql .= " ORDER BY id DESC";
 
     $result = $conn->query($sql);
 
     if ($result->num_rows > 0): ?>
-        <form method="post" action="update_note.php"> <!-- note 수정 작업을 위한 form -->
-            <table border=0 cellpadding=1 cellspacing=1 class="list-tb">
-                <caption>주문 조회</caption>
-                <thead>
-                <tr height="24" bgcolor="#FFFFFF">
-                    <td width=100>순번</td>
-                    <td width=200>주문번호</td>
-                    <td width=140>상품옵션(일자)</td>
-                    <td width="120">거래처</td>
-                    <td width=200>비고</td>
-                    <td width=150>수정</td>
-                    <td width=150>API 요청시간</td>
-                    <td width=120>CTN</td>
-                    <td width=300>QR Code Data</td>
-                </tr>
-                </thead>
-                <tbody>
-                <?php
-                $row_number = 1;
-                while ($row = $result->fetch_assoc()): ?>
+        <table border="0" cellpadding="1" cellspacing="1" class="list-tb">
+            <caption>주문 조회</caption>
+            <thead>
+            <tr height="24" bgcolor="#FFFFFF">
+                <th width="100">순번</th>
+                <th width="200">주문번호</th>
+                <th width="140">상품옵션(일자)</th>
+                <th width="120">거래처</th>
+                <th width="200">비고</th>
+                <th width="150">수정</th>
+                <th width="150">API 요청시간</th>
+                <th width="120">CTN</th>
+                <th width="300">QR Code Data</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php
+            $row_number = 1;
+            while ($row = $result->fetch_assoc()):
+                // 필요한 정보를 변수에 저장
+                $order_num = htmlspecialchars($row["order_num"]);
+                $esimDays = htmlspecialchars($row["esimDays"]);
+                $roming_phon_num = htmlspecialchars($row["roming_phon_num"]);
+
+                // 거래처 이름 설정
+                switch ($row["shop"]) {
+                    case '1':
+                        $shop_name = "명동사";
+                        break;
+                    default:
+                        $shop_name = "알 수 없음";
+                        break;
+                }
+                $shop_name = htmlspecialchars($shop_name);
+                ?>
+                <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+                    <input type="hidden" name="CallStep" value="1">
+                    <input type="hidden" name="note_update" value="1">
+                    <input type="hidden" name="note_id" value="<?php echo $row['id']; ?>">
+                    <!-- 기존 검색 조건을 유지하기 위해 hidden input에 값들을 저장 -->
+                    <input type="hidden" name="start_dt" value="<?php echo htmlspecialchars($varStartDt); ?>">
+                    <input type="hidden" name="end_dt" value="<?php echo htmlspecialchars($varEndDt); ?>">
+                    <input type="hidden" name="search_order_id" value="<?php echo htmlspecialchars($varSearch_order_id); ?>">
+                    <input type="hidden" name="search_shop_no" value="<?php echo htmlspecialchars($varSearch_shop_no); ?>">
                     <tr height="24" bgcolor="#FFFFFF">
-                        <td align="center"><?= $row_number ?></td>
-                        <td align="center"><?= htmlspecialchars($row["order_num"]) ?></td>
-                        <td align="center">레드 eSIM <?= htmlspecialchars($row["esimDays"]) ?>일(수신불가)</td>
+                        <td align="center"><?php echo $row_number; ?></td>
                         <td align="center">
-                            <?php
-                            switch ($row["shop"]) {
-                                case '1':
-                                    $shop_name = "명동사";
-                                    break;
-                                default:
-                                    $shop_name = "알 수 없음";
-                                    break;
-                            }
-                            echo htmlspecialchars($shop_name);
-                            ?>
+                            <!-- 주문번호를 클릭 가능한 링크로 변경하고 클래스와 데이터 속성 추가 -->
+                            <a href="#" class="copyOrderInfo"
+                               data-order="<?php echo $order_num; ?>"
+                               data-product="<?php echo $esimDays; ?>"
+                               data-shop="<?php echo $shop_name; ?>"
+                               data-ctn="<?php echo $roming_phon_num; ?>">
+                                <?php echo $order_num; ?>
+                            </a>
                         </td>
+                        <td align="center">레드 eSIM <?php echo $esimDays; ?>일(수신불가)</td>
+                        <td align="center"><?php echo $shop_name; ?></td>
                         <td align="center">
-                            <!-- 각 note 필드를 ID별로 묶어서 전송 -->
-                            <textarea name="note[<?= $row['id'] ?>]" rows="3" cols="30"><?= htmlspecialchars($row["note"]) ?></textarea>
+                            <!-- 각 note 필드를 개별적으로 수정 가능 -->
+                            <textarea name="note_content" rows="3" cols="30"><?php echo htmlspecialchars($row["note"]); ?></textarea>
                         </td>
                         <td align="center">
                             <div class="list-mng-btn_wrap">
-                                <input type="submit" value="Modify" class="list-mng-btn btn-tp2 mt"> <!-- Modify 버튼 -->
+                                <input type="submit" value="Modify" class="list-mng-btn btn-tp2 mt">
                             </div>
                         </td>
-                        <td align="center"><?= htmlspecialchars($row["created_at"]) ?></td>
-                        <td align="center"><?= htmlspecialchars($row["roming_phon_num"]) ?></td>
-                        <td align="center"><?= htmlspecialchars($row["esim_mapping_id"]) ?></td>
+                        <td align="center"><?php echo htmlspecialchars($row["created_at"]); ?></td>
+                        <td align="center"><?php echo $roming_phon_num; ?></td>
+                        <td align="center"><?php echo htmlspecialchars($row["esim_mapping_id"]); ?></td>
                     </tr>
-                    <?php $row_number++; ?>
-                <?php endwhile; ?>
-                </tbody>
-            </table>
-        </form>
+                </form>
+                <?php $row_number++; ?>
+            <?php endwhile; ?>
+            </tbody>
+        </table>
     <?php else: ?>
         <p>결과가 없습니다.</p>
     <?php endif;
@@ -235,6 +289,41 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
 <?php endif; ?>
 
 <script>
+    // 주문번호 클릭 시 정보 복사 기능 추가
+    $(document).ready(function() {
+        $('.copyOrderInfo').click(function(e) {
+            e.preventDefault();
+
+            var orderNumber = $(this).data('order');
+            var productDays = $(this).data('product');
+            var shopName = $(this).data('shop');
+            var ctn = $(this).data('ctn');
+
+            var copyText = '주문번호: ' + orderNumber + '\n' +
+                '상품(일자): 레드 eSIM ' + productDays + '일(수신불가)\n' +
+                '거래처: ' + shopName + '\n' +
+                'CTN: ' + ctn;
+
+            // 클립보드에 복사
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(copyText).then(function() {
+                    alert('다음 정보가 복사되었습니다:\n\n' + copyText);
+                }, function(err) {
+                    console.error('복사 실패:', err);
+                    alert('복사 실패: ' + err);
+                });
+            } else {
+                // 비동기 클립보드 API를 사용할 수 없는 경우
+                var tempElem = $('<textarea>');
+                $('body').append(tempElem);
+                tempElem.val(copyText).select();
+                document.execCommand('copy');
+                tempElem.remove();
+                alert('다음 정보가 복사되었습니다:\n\n' + copyText);
+            }
+        });
+    });
+
     document.getElementById('TOTAL_CNT').addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9]/g, '');
 
