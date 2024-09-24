@@ -1,0 +1,6 @@
+ <li>
+        <a href="/coupon/coupon_book.html" class="float_btn"><img src="/source/img/icon-event.png" alt="event_coupon_book_site"></a>
+        <div class="float_btn_expl">
+          쿠폰북 이벤트
+        </div>
+      </li>
