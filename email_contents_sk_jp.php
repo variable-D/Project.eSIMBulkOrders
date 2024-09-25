@@ -29,26 +29,21 @@ $email_contents .=
     <div><font color=\"#222222\">韓国での旅がより快適で素敵になりますように。</font></div><br><div><font color=\"#222222\">(このメールは発信専用なので、返信には対応いたしかねます。)</font></div><br>
     <div><img src=\"https://www.koreaesim.com/mobile_app/img/esim_red_event.jpg\"></div><br>
     <div><font color=\"#222222\">====================</font></div><br>
-    <img src=\"https://www.koreaesim.com/mobile_app/img/korea-sim-title.jpg\" width=\"182\" height=\"74\" style=\"margin-right:0px\"><br><br>
+    <div><h3><b>Exclusive Coupon Book Event</b></h3></div><br>
+    <div>~ 2024.12.31</div><br>
+    <div><ul>
+    <li><b>クーポンブックを取得方法</b>: 👉 <a href=\"https://esimkorea.com\">こちらをクリック</a>（または <a href=\"http://esimkorea.com\">esimkorea.com</a>にアクセス）、右下の🎁アイコンをクリックして、「esimkorea.com」をパスワード欄に入力してください。</li>
+    </ul></div><br>
+    <hr><br>
+    <div><b>受け取り方法</b></div><br>
+    <div><ul>
+    <li>eSIM Red（メール配信)の場合、購入後に送信されたメールをご確認ください。</li>
+    <li>その他の空港受け取り商品の場合、受け取り時に紙のクーポンが提供されます。</li>
+    </ul></div><br>
+    <div><b>使用方法</b></div><br>
+    <div><ul>
+    <li>入場時または支払い時にクーポンを提示してください。</li>
+    </ul></div><br>
+    <hr><br>
     <div><font color=\"#222222\">Korea SIM (&nbsp;<a href=\"https://www.krsim.net/\" target=\"_blank\">https://www.krsim.net/</a>&nbsp;)&nbsp;ソウルに位置する、韓国の企業です。</font></div><br><br>";
-
-// 追加された内容の開始
-$email_contents .= "<div><h3><b>Exclusive Coupon Book Event</b></h3></div><br>";
-$email_contents .= "<div>~ 2024.12.31</div><br>";
-$email_contents .= "<div><ul>";
-$email_contents .= "<li><b>クーポンブックを取得方法</b>: 👉 <a href=\"https://esimkorea.com\">こちらをクリック</a>（または <a href=\"http://esimkorea.com\">esimkorea.com</a>にアクセス）、右下の🎁アイコンをクリックして、「esimkorea.com」をパスワード欄に入力してください。</li>";
-$email_contents .= "</ul></div><br>";
-$email_contents .= "<hr><br>";
-$email_contents .= "<div><b>受け取り方法</b></div><br>";
-$email_contents .= "<div><ul>";
-$email_contents .= "<li>eSIM Red（メール配信)の場合、購入後に送信されたメールをご確認ください。</li>";
-$email_contents .= "<li>その他の空港受け取り商品の場合、受け取り時に紙のクーポンが提供されます。</li>";
-$email_contents .= "</ul></div><br>";
-$email_contents .= "<div><b>使用方法</b></div><br>";
-$email_contents .= "<div><ul>";
-$email_contents .= "<li>入場時または支払い時にクーポンを提示してください。</li>";
-$email_contents .= "</ul></div><br>";
-$email_contents .= "<hr><br>";
-// 追加された内容の終了
-
 ?>

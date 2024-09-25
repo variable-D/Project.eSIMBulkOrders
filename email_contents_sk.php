@@ -26,29 +26,23 @@ $email_contents .=
     <div><font color=\"#222222\">&nbsp;·&nbsp;&nbsp;&nbsp; If you have questions about the service contents, please contact us through Korea SIM Chat Service (krsim.channel.io)</font></div>
     <div><font color=\"#222222\">&nbsp;·&nbsp;&nbsp;&nbsp; If you encounter technical troubles, please contact SKT customer center Tel : 02-6343-9000.</font></div><br>
     <div><font color=\"#222222\">Have a wonderful day.</font></div><br><div><font color=\"#222222\">(This email is only for sending eSIM QR code. Don’t reply.)</font></div><br>
-    <div><img src=\"https://www.koreaesim.com/mobile_app/img/esim_red_event.jpg\"></div><br>
     <div><font color=\"#222222\">====================</font></div><br>
-    <img src=\"https://www.koreaesim.com/mobile_app/img/korea-sim-title.jpg\" width=\"182\" height=\"74\" style=\"margin-right:0px\"><br><br>
+    <div><h3><b>Exclusive Coupon Book Event</b></h3></div>
+    <div>~ 2024.12.31</div><br>
+    <div><ul>
+    <li><b>Get the Coupon Book</b>: 👉 <a href=\"https://krsim.net/\">Click here</a> (or visit <a href=\"http://krsim.net\">krsim.net</a>) and find the 🎁 icon at the bottom right. Then, enter ‘<a href=\"http://krsim.net/\">krsim.net</a>’ as a password.</li>
+    </ul></div><br>
+    <hr><br>
+    <div><b>How to Collect</b></div><br>
+    <div><ul>
+    <li>For eSIM Red with email delivery, please check the email sent after your purchase.</li>
+    <li>For any other airport pick-up products, a physical coupon will be provided on pick-up.</li>
+    </ul></div><br>
+    <div><b>How to Use</b></div><br>
+    <div><ul>
+    <li>Present the coupon at the entrance or during payment.</li>
+    </ul></div><br>
+    <hr><br>
     <div><font color=\"#222222\">Korea SIM (&nbsp;<a href=\"https://www.krsim.net/\" target=\"_blank\">https://www.krsim.net/</a>&nbsp;)&nbsp;located in Seoul,&nbsp;South Korea.</font></div><br><br>";
-
-// 추가된 내용 시작
-
-$email_contents .= "<div><h3><b>Exclusive Coupon Book Event</b></h3></div>";
-$email_contents .= "<div>~ 2024.12.31</div><br>";
-$email_contents .= "<div><ul>";
-$email_contents .= "<li><b>Get the Coupon Book</b>: 👉 <a href=\"https://krsim.net/\">Click here</a> (or visit <a href=\"http://krsim.net\">krsim.net</a>) and find the 🎁 icon at the bottom right. Then, enter ‘<a href=\"http://krsim.net/\">krsim.net</a>’ as a password.</li>";
-$email_contents .= "</ul></div><br>";
-$email_contents .= "<hr><br>";
-$email_contents .= "<div><b>How to Collect</b></div><br>";
-$email_contents .= "<div><ul>";
-$email_contents .= "<li>For eSIM Red with email delivery, please check the email sent after your purchase.</li>";
-$email_contents .= "<li>For any other airport pick-up products, a physical coupon will be provided on pick-up.</li>";
-$email_contents .= "</ul></div><br>";
-$email_contents .= "<div><b>How to Use</b></div><br>";
-$email_contents .= "<div><ul>";
-$email_contents .= "<li>Present the coupon at the entrance or during payment.</li>";
-$email_contents .= "</ul></div><br>";
-$email_contents .= "<hr><br>";
-// 추가된 내용 끝
 
 ?>
