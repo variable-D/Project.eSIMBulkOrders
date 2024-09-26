@@ -1,5 +1,6 @@
 <?php
 include 'db_info.php';
+date_default_timezone_set('Asia/Seoul');
 
 // 기본 값 설정
 $varCallStep = isset($_REQUEST['CallStep']) ? $_REQUEST['CallStep'] : '0'; // CallStep: 0은 처음 로드, 1은 검색 버튼 클릭 시
@@ -9,10 +10,11 @@ $endDtWithTime = $varEndDt . " 23:59:59";
 $varSearch_order_id = isset($_REQUEST['search_order_id']) ? trim($_REQUEST['search_order_id']) : ''; // 주문번호/CTN 검색
 $varSearch_shop_no = isset($_REQUEST['search_shop_no']) ? trim($_REQUEST['search_shop_no']) : ''; // 쇼핑몰 검색
 
-// 노트 업데이트 처리
+// 노트 및 isrefunded 업데이트 처리
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note_update'])) {
     $note_id = $_POST['note_id'];
     $note_content = $_POST['note_content'];
+    $isrefunded = isset($_POST['isrefunded']) ? 1 : 0;
 
     // DB 연결
     $conn = new mysqli($db_host, $db_user, $db_pwd, $db_category, $db_port);
@@ -21,9 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note_update'])) {
     }
     $conn->set_charset("utf8mb4");
 
-    // 노트 업데이트 쿼리 실행
-    $stmt = $conn->prepare("UPDATE t_esim_bulk_order_tb SET note=? WHERE id=?");
-    $stmt->bind_param("si", $note_content, $note_id);
+    // 노트와 isrefunded 업데이트 쿼리 실행
+    $stmt = $conn->prepare("UPDATE t_esim_bulk_order_tb SET note=?, isrefunded=? WHERE id=?");
+    $stmt->bind_param("sii", $note_content, $isrefunded, $note_id);
 
     if ($stmt->execute()) {
         // 업데이트 성공 시, 데이터를 다시 로드하도록 $varCallStep를 유지하고 넘어갑니다.
@@ -44,7 +46,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     $conn->set_charset("utf8mb4");
 
     // SQL 쿼리
-    $sql = "SELECT order_num, esimDays, esim_mapping_id, roming_phon_num, smdp_address, activation_code, created_at 
+    $sql = "SELECT order_num, esimDays, esim_mapping_id, roming_phon_num, smdp_address, activation_code, created_at ,isrefunded
             FROM t_esim_bulk_order_tb 
             WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
 
@@ -69,14 +71,16 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     $output = fopen('php://output', 'w');
 
     // CSV 헤더 작성
-    fputcsv($output, ['Order Number','days', 'ESIM Mapping ID', 'CTN', 'SM-DP Address', 'Activation Code']);
+    fputcsv($output, ['Order Number','days','Refunded', 'ESIM Mapping ID', 'CTN', 'SM-DP Address', 'Activation Code']);
 
     // 데이터를 CSV 파일에 입력
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
+            $isRefunded = $row['isrefunded'] == 0 ? 'X' : 'O';
             fputcsv($output, [
                 $row['order_num'],
                 $row['esimDays'],
+                $isRefunded,
                 $row['esim_mapping_id'],
                 $row['roming_phon_num'],
                 $row['smdp_address'],
@@ -145,7 +149,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
 </form>
 <!-- Search Form -->
 <div class="esim_list_sch1">
-    <form name="input_form" action="<?= $_SERVER['PHP_SELF'] ?>" method="get">
+    <form name="input_form" action="<?= $_SERVER['PHP_SELF'] ?>" method="post">
         <input type="hidden" name="CallStep" value="1">
         <ul class="esim_list_sch1_ul">
             <li>
@@ -184,7 +188,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     // SQL 쿼리 생성
     if ($varSearch_order_id != '') {
         // 주문번호나 CTN으로 검색 시 날짜 조건을 무시합니다.
-        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop 
+        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop, isrefunded 
                 FROM t_esim_bulk_order_tb 
                 WHERE (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
         if ($varSearch_shop_no != '') {
@@ -192,7 +196,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
         }
     } else {
         // 날짜로 검색
-        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop 
+        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop , isrefunded
                 FROM t_esim_bulk_order_tb 
                 WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
         if ($varSearch_shop_no != '') {
@@ -213,6 +217,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
                 <th width="140">상품옵션(일자)</th>
                 <th width="120">거래처</th>
                 <th width="200">비고</th>
+                <th width="120">환불</th>
                 <th width="150">수정</th>
                 <th width="150">API 요청시간</th>
                 <th width="120">CTN</th>
@@ -266,6 +271,10 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
                             <!-- 각 note 필드를 개별적으로 수정 가능 -->
                             <textarea name="note_content" rows="3" cols="30"><?php echo htmlspecialchars($row["note"]); ?></textarea>
                         </td>
+                        <!-- 환불 (isrefunded) 체크박스 -->
+                        <td align="center">
+                            <input type="checkbox" name="isrefunded" value="1" <?php if ($row['isrefunded'] == 1) echo 'checked'; ?>>
+                        </td>
                         <td align="center">
                             <div class="list-mng-btn_wrap">
                                 <input type="submit" value="Modify" class="list-mng-btn btn-tp2 mt">
@@ -281,7 +290,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
             </tbody>
         </table>
     <?php else: ?>
-        <p>결과가 없습니다.</p>
+        <p align="center" style="font-size: 100px">결과가 없습니다.</p>
     <?php endif;
 
     $conn->close();
@@ -338,6 +347,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
         const today = new Date();
         const yyyymmdd = today.toISOString().slice(0, 10).replace(/-/g, '');
         const shopNo = document.getElementById('SHOP_NO').value;
+        const uniqueId = 'BK';
 
         if (!shopNo) {
             alert('쇼핑몰을 선택해주세요.');
@@ -349,7 +359,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
         const random2 = Math.floor(Math.random() * 10000);
         const checksum = (yyyymmddSum + random2) % 10;
 
-        const orderNum = `${yyyymmdd}${shopNo}${random1Padded}${checksum}`;
+        const orderNum = `${yyyymmdd}${uniqueId}${random1Padded}${checksum}`;
 
         if (!window.confirm(
             `eSIM Bulk Order API 요청을 하시겠습니까?\n\n- 수량: ${document.getElementById('TOTAL_CNT').value}\n- 요금제: ${document.getElementById('RENTAL_FEE_PROD_ID').options[document.getElementById('RENTAL_FEE_PROD_ID').selectedIndex].text}\n- 주문 번호: ${orderNum}`
