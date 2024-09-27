@@ -19,14 +19,9 @@ if (!isset($_REQUEST['RENTAL_FEE_PROD_ID'])) {
 $rental_fee_prod_id = $_REQUEST['RENTAL_FEE_PROD_ID'];
 $total_cnt = isset($_REQUEST['TOTAL_CNT']) ? (int)$_REQUEST['TOTAL_CNT'] : 1;
 $order_num = isset($_REQUEST['ORDER_NUM']) ? $_REQUEST['ORDER_NUM'] : null;
-$shop_no = isset($_REQUEST['SHOP_NO']) ? $_REQUEST['SHOP_NO'] : null;
 
 
-switch ($shop_no){
-    case 'MD':
-        $shop_no = '1';
-        break;
-}
+
 
 
 // eSIM 요금제 일 수 설정
@@ -144,7 +139,6 @@ foreach ($resData['OUT1'] as $index => $item) {
     $eqp_ser_num = $item['EQP_SER_NUM'];
     $roming_phon_num = $item['ROMING_PHON_NUM'];
     $roming_num = $item['ROMING_NUM'];
-    $shop_no = $shop_no;
 
     // ESIM_MAPPING_ID를 '$' 기준으로 나누기
     $parts = explode('$', $esim_mapping_id, 3); // 최대 3개의 부분으로 분리
@@ -160,7 +154,7 @@ foreach ($resData['OUT1'] as $index => $item) {
     }
 
     // DB 저장
-    $stmt = $conn->prepare("INSERT INTO t_esim_bulk_order_tb (order_num, esimDays, rental_mst_num, eqp_mdl_cd, esim_mapping_id, eqp_ser_num, roming_phon_num, roming_num, shop, smdp_address, activation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO t_esim_bulk_order_tb (order_num, esimDays, rental_mst_num, eqp_mdl_cd, esim_mapping_id, eqp_ser_num, roming_phon_num, roming_num, smdp_address, activation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     if (!$stmt) {
         echo "쿼리 준비 실패: " . $conn->error;
@@ -168,7 +162,7 @@ foreach ($resData['OUT1'] as $index => $item) {
     }
 
     // bind_param에서 smdp_address와 activation_code 추가
-    $stmt->bind_param("sssssssssss", $rsv_vou_num, $esimDays, $rental_mst_num, $eqp_mdl_cd, $esim_mapping_id, $eqp_ser_num, $roming_phon_num, $roming_num, $shop_no, $smdp_address, $activation_code);
+    $stmt->bind_param("ssssssssss", $rsv_vou_num, $esimDays, $rental_mst_num, $eqp_mdl_cd, $esim_mapping_id, $eqp_ser_num, $roming_phon_num, $roming_num, $smdp_address, $activation_code);
 
     if (!$stmt->execute()) {
         echo "DB 저장 오류: " . $stmt->error;

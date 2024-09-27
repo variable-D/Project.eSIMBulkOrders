@@ -36,17 +36,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note_update'])) {
         echo "노트 업데이트 실패: " . $stmt->error;
     }
 }
-// CSV 파일 다운로드 처리
-if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부를 확인
+
+// 정산 CSV 파일 다운로드 처리
+if (isset($_POST['download_csv_calculate'])) { // 엑셀 다운로드 버튼 클릭 여부를 확인
     // DB 연결
     $conn = new mysqli($db_host, $db_user, $db_pwd, $db_category, $db_port);
     if ($conn->connect_error) {
         die("DB 연결 실패: " . $conn->connect_error);
     }
-    $conn->set_charset("utf8mb4");
+    $conn->set_charset("utf8mb4"); // utf8mb4로 변경
 
     // SQL 쿼리
-    $sql = "SELECT order_num, esimDays, esim_mapping_id, roming_phon_num, smdp_address, activation_code, created_at ,isrefunded
+    $sql = "SELECT order_num, roming_phon_num, created_at, isrefunded, note, esimDays
             FROM t_esim_bulk_order_tb 
             WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
 
@@ -61,7 +62,10 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     $result = $conn->query($sql);
 
     // CSV 파일 생성
-    $filename = 'esim_bulk_order_' . date('Ymd') . '.csv';
+    $filename = 'esim_bulk_order_cal_' . date('Ymd') . '.csv';
+
+    // UTF-8 BOM 추가
+    $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
 
     header('Content-Type: text/csv; charset=UTF-8');
     header("Content-Disposition: attachment; filename=\"$filename\"");
@@ -70,22 +74,95 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
 
     $output = fopen('php://output', 'w');
 
+    // BOM 출력
+    fwrite($output, $bom);
+
     // CSV 헤더 작성
-    fputcsv($output, ['Order Number','days','Refunded', 'ESIM Mapping ID', 'CTN', 'SM-DP Address', 'Activation Code']);
+    fputcsv($output, ['주문번호','상품명','옵션','비고','환불여부','CTN','API 요청시간']);
 
     // 데이터를 CSV 파일에 입력
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
             $isRefunded = $row['isrefunded'] == 0 ? 'X' : 'O';
+            $product = '레드';
             fputcsv($output, [
                 $row['order_num'],
+                $product,
                 $row['esimDays'],
+                $row['note'],
                 $isRefunded,
-                $row['esim_mapping_id'],
                 $row['roming_phon_num'],
-                $row['smdp_address'],
-                $row['activation_code']
+                $row['created_at']
             ]);
+        }
+    }
+
+    fclose($output);
+    $conn->close();
+    exit; // 다운로드 후 더 이상의 처리가 없도록 종료
+}
+
+// CSV 파일 다운로드 처리
+if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 여부를 확인
+    // DB 연결
+    $conn = new mysqli($db_host, $db_user, $db_pwd, $db_category, $db_port);
+    if ($conn->connect_error) {
+        die("DB 연결 실패: " . $conn->connect_error);
+    }
+    $conn->set_charset("utf8mb4"); // utf8mb4로 변경
+
+    // SQL 쿼리
+    $sql = "SELECT order_num, roming_phon_num, esimDays, smdp_address, activation_code, esim_mapping_id
+            FROM t_esim_bulk_order_tb 
+            WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime' AND csv_downloaded = 0";
+
+    if ($varSearch_order_id != '') {
+        $sql .= " AND (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
+    }
+    if ($varSearch_shop_no != '') {
+        $sql .= " AND shop = '$varSearch_shop_no'";
+    }
+    $sql .= " ORDER BY id DESC";
+
+    $result = $conn->query($sql);
+
+    // CSV 파일 생성
+    $filename = 'esim_bulk_order_' . date('Ymd') . '.csv';
+
+    // UTF-8 BOM 추가
+    $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header("Content-Disposition: attachment; filename=\"$filename\"");
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $output = fopen('php://output', 'w');
+
+    // BOM 출력
+    fwrite($output, $bom);
+
+    // CSV 헤더 작성
+    fputcsv($output, ['주문번호','일자','CTN','SMDP Address','Activation Code','LPA']);
+
+    // 데이터를 CSV 파일에 입력
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            if($row['csv_downloaded'] == 0) {
+                fputcsv($output, [
+                    $row['order_num'],
+                    $row['esimDays'],
+                    $row['roming_phon_num'],
+                    $row['smdp_address'],
+                    $row['activation_code'],
+                    $row['esim_mapping_id']
+                ]);
+
+                $sql1 = "UPDATE t_esim_bulk_order_tb SET csv_downloaded = 1 WHERE order_num = '".$row['order_num']."'";
+                $conn->query($sql1);
+            } else{
+                return;
+            }
         }
     }
 
@@ -110,15 +187,6 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
 
 <!-- Bulk Order Form -->
 <form id="esim_bulk_order">
-    <ul class="esim_list_sch2_ul es-col7">
-        <li>
-            <p class="esim_list_sch2-subj">납품처</p>
-            <select name="SHOP_NO" id="SHOP_NO" class="input_data" required>
-                <option value="">선택</option>
-                <option value="MD">명동사</option>
-            </select>
-        </li>
-    </ul>
     <ul class="esim_list_sch2_ul es-col7">
         <li>
             <p class="esim_list_sch2-subj">수량</p>
@@ -148,7 +216,9 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     </ul>
 </form>
 <!-- Search Form -->
-<div class="esim_list_sch1">
+
+
+<!-- 검색 결과 출력 --><div class="esim_list_sch1">
     <form name="input_form" action="<?= $_SERVER['PHP_SELF'] ?>" method="post">
         <input type="hidden" name="CallStep" value="1">
         <ul class="esim_list_sch1_ul">
@@ -157,25 +227,20 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
                 <input type="text" name="end_dt" id="end_dt" value="<?= htmlspecialchars($varEndDt) ?>"/>
             </li>
             <li>
-                <select name="search_shop_no">
-                    <option value="">납품처</option>
-                    <option value="1" <?= $varSearch_shop_no == '1' ? 'selected' : '' ?>>명동사</option>
-                </select>
-            </li>
-            <li>
                 <input type="text" name="search_order_id" value="<?= htmlspecialchars($varSearch_order_id) ?>" placeholder="주문번호/CTN"/>
             </li>
             <li>
                 <input class="sch1_submit-btn" type="submit" value="Search">
             </li>
             <li>
-                <button class="sch1_submit-btn" type="submit" name="download_csv">Csv-다운</button>
+                <button class="sch1_submit-btn" type="submit" name="download_csv_order">주문-CSV</button>
+            </li>
+            <li>
+                <button class="sch1_submit-btn" type="submit" name="download_csv_calculate">정산-CSV</button>
             </li>
         </ul>
     </form>
 </div>
-
-<!-- 검색 결과 출력 -->
 <?php if ($varCallStep == "1"): ?>
     <?php
     // DB 연결
@@ -188,7 +253,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
     // SQL 쿼리 생성
     if ($varSearch_order_id != '') {
         // 주문번호나 CTN으로 검색 시 날짜 조건을 무시합니다.
-        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop, isrefunded 
+        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, isrefunded, csv_downloaded
                 FROM t_esim_bulk_order_tb 
                 WHERE (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
         if ($varSearch_shop_no != '') {
@@ -196,7 +261,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
         }
     } else {
         // 날짜로 검색
-        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, shop , isrefunded
+        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, isrefunded, csv_downloaded
                 FROM t_esim_bulk_order_tb 
                 WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
         if ($varSearch_shop_no != '') {
@@ -215,10 +280,10 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
                 <th width="100">순번</th>
                 <th width="200">주문번호</th>
                 <th width="140">상품옵션(일자)</th>
-                <th width="120">거래처</th>
                 <th width="200">비고</th>
                 <th width="120">환불</th>
                 <th width="150">수정</th>
+                <th width="120">csvDownloaded</th>
                 <th width="150">API 요청시간</th>
                 <th width="120">CTN</th>
                 <th width="300">QR Code Data</th>
@@ -233,16 +298,6 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
                 $esimDays = htmlspecialchars($row["esimDays"]);
                 $roming_phon_num = htmlspecialchars($row["roming_phon_num"]);
 
-                // 거래처 이름 설정
-                switch ($row["shop"]) {
-                    case '1':
-                        $shop_name = "명동사";
-                        break;
-                    default:
-                        $shop_name = "알 수 없음";
-                        break;
-                }
-                $shop_name = htmlspecialchars($shop_name);
                 ?>
                 <form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>">
                     <input type="hidden" name="CallStep" value="1">
@@ -260,13 +315,11 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
                             <a href="#" class="copyOrderInfo"
                                data-order="<?php echo $order_num; ?>"
                                data-product="<?php echo $esimDays; ?>"
-                               data-shop="<?php echo $shop_name; ?>"
                                data-ctn="<?php echo $roming_phon_num; ?>">
                                 <?php echo $order_num; ?>
                             </a>
                         </td>
                         <td align="center">레드 eSIM <?php echo $esimDays; ?>일(수신불가)</td>
-                        <td align="center"><?php echo $shop_name; ?></td>
                         <td align="center">
                             <!-- 각 note 필드를 개별적으로 수정 가능 -->
                             <textarea name="note_content" rows="3" cols="30"><?php echo htmlspecialchars($row["note"]); ?></textarea>
@@ -279,6 +332,10 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
                             <div class="list-mng-btn_wrap">
                                 <input type="submit" value="Modify" class="list-mng-btn btn-tp2 mt">
                             </div>
+                        </td>
+                        <!-- csvDownloaded 체크박스 -->
+                        <td align="center" <?php if ($row['csv_downloaded'] == 1) echo 'style="background-color: orange;"'; ?>>
+                            <input type="checkbox" disabled <?php if ($row['csv_downloaded'] == 1) echo 'checked'; ?>>
                         </td>
                         <td align="center"><?php echo htmlspecialchars($row["created_at"]); ?></td>
                         <td align="center"><?php echo $roming_phon_num; ?></td>
@@ -305,12 +362,10 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
 
             var orderNumber = $(this).data('order');
             var productDays = $(this).data('product');
-            var shopName = $(this).data('shop');
             var ctn = $(this).data('ctn');
 
             var copyText = '주문번호: ' + orderNumber + '\n' +
                 '상품(일자): 레드 eSIM ' + productDays + '일(수신불가)\n' +
-                '거래처: ' + shopName + '\n' +
                 'CTN: ' + ctn;
 
             // 클립보드에 복사
@@ -342,6 +397,7 @@ if (isset($_POST['download_csv'])) { // 엑셀 다운로드 버튼 클릭 여부
             this.value = '';  // 입력값을 초기화
         }
     });
+
 
     const esim_bulk_order = () => {
         const today = new Date();
