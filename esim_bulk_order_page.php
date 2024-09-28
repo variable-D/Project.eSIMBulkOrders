@@ -8,7 +8,6 @@ $varStartDt = isset($_REQUEST['start_dt']) ? $_REQUEST['start_dt'] : date("Y-m-d
 $varEndDt = isset($_REQUEST['end_dt']) ? $_REQUEST['end_dt'] : date("Y-m-d", time()); // 기본값: 현재일
 $endDtWithTime = $varEndDt . " 23:59:59";
 $varSearch_order_id = isset($_REQUEST['search_order_id']) ? trim($_REQUEST['search_order_id']) : ''; // 주문번호/CTN 검색
-$varSearch_shop_no = isset($_REQUEST['search_shop_no']) ? trim($_REQUEST['search_shop_no']) : ''; // 쇼핑몰 검색
 
 // 노트 및 isrefunded 업데이트 처리
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['note_update'])) {
@@ -53,9 +52,6 @@ if (isset($_POST['download_csv_calculate'])) { // 엑셀 다운로드 버튼 클
 
     if ($varSearch_order_id != '') {
         $sql .= " AND (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
-    }
-    if ($varSearch_shop_no != '') {
-        $sql .= " AND shop = '$varSearch_shop_no'";
     }
     $sql .= " ORDER BY id DESC";
 
@@ -112,15 +108,12 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
     $conn->set_charset("utf8mb4"); // utf8mb4로 변경
 
     // SQL 쿼리
-    $sql = "SELECT order_num, roming_phon_num, esimDays, smdp_address, activation_code, esim_mapping_id
+    $sql = "SELECT order_num, roming_phon_num, esimDays, smdp_address, activation_code, esim_mapping_id, isrefunded, note
             FROM t_esim_bulk_order_tb 
             WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime' AND csv_downloaded = 0";
 
     if ($varSearch_order_id != '') {
         $sql .= " AND (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
-    }
-    if ($varSearch_shop_no != '') {
-        $sql .= " AND shop = '$varSearch_shop_no'";
     }
     $sql .= " ORDER BY id DESC";
 
@@ -148,7 +141,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
     // 데이터를 CSV 파일에 입력
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
-            if($row['csv_downloaded'] == 0) {
+            if($row['csv_downloaded'] == 0 && $row['isrefunded'] == 0 && $row['note'] == null) {
                 fputcsv($output, [
                     $row['order_num'],
                     $row['esimDays'],
@@ -157,7 +150,6 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
                     $row['activation_code'],
                     $row['esim_mapping_id']
                 ]);
-
                 $sql1 = "UPDATE t_esim_bulk_order_tb SET csv_downloaded = 1 WHERE order_num = '".$row['order_num']."'";
                 $conn->query($sql1);
             } else{
@@ -215,6 +207,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
         </li>
     </ul>
 </form>
+<br/>
 <!-- Search Form -->
 
 
@@ -256,17 +249,11 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
         $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, isrefunded, csv_downloaded
                 FROM t_esim_bulk_order_tb 
                 WHERE (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
-        if ($varSearch_shop_no != '') {
-            $sql .= " AND shop = '$varSearch_shop_no'";
-        }
     } else {
         // 날짜로 검색
         $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, isrefunded, csv_downloaded
                 FROM t_esim_bulk_order_tb 
                 WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
-        if ($varSearch_shop_no != '') {
-            $sql .= " AND shop = '$varSearch_shop_no'";
-        }
     }
     $sql .= " ORDER BY id DESC";
 
@@ -307,7 +294,6 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
                     <input type="hidden" name="start_dt" value="<?php echo htmlspecialchars($varStartDt); ?>">
                     <input type="hidden" name="end_dt" value="<?php echo htmlspecialchars($varEndDt); ?>">
                     <input type="hidden" name="search_order_id" value="<?php echo htmlspecialchars($varSearch_order_id); ?>">
-                    <input type="hidden" name="search_shop_no" value="<?php echo htmlspecialchars($varSearch_shop_no); ?>">
                     <tr height="24" bgcolor="#FFFFFF">
                         <td align="center"><?php echo $row_number; ?></td>
                         <td align="center">
@@ -402,13 +388,8 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
     const esim_bulk_order = () => {
         const today = new Date();
         const yyyymmdd = today.toISOString().slice(0, 10).replace(/-/g, '');
-        const shopNo = document.getElementById('SHOP_NO').value;
         const uniqueId = 'BK';
 
-        if (!shopNo) {
-            alert('쇼핑몰을 선택해주세요.');
-            return;
-        }
 
         const random1Padded = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         const yyyymmddSum = [...yyyymmdd].reduce((sum, digit) => sum + parseInt(digit, 10), 0);
@@ -425,7 +406,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
 
         const formData = new FormData(document.getElementById('esim_bulk_order'));
         formData.append('ORDER_NUM', orderNum);
-        formData.append('SHOP_NO', document.getElementById('SHOP_NO').value);
+
 
         fetch('/mobile_app/mgr/esim_bulk_order.php', {
             method: 'POST',
