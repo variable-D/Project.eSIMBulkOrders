@@ -58,7 +58,7 @@ if (isset($_POST['download_csv_calculate'])) { // 엑셀 다운로드 버튼 클
     $result = $conn->query($sql);
 
     // CSV 파일 생성
-    $filename = 'esim_bulk_order_cal_' . date('Ymd') . '.csv';
+    $filename = 'eSIM_Bulk_Order_Cal_' . date('Ymd') . '.csv';
 
     // UTF-8 BOM 추가
     $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
@@ -120,7 +120,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
     $result = $conn->query($sql);
 
     // CSV 파일 생성
-    $filename = 'esim_bulk_order_' . date('Ymd') . '.csv';
+    $filename = 'eSIM_Bulk_Order_' . date('Ymd') . '.csv';
 
     // UTF-8 BOM 추가
     $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
@@ -141,20 +141,19 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
     // 데이터를 CSV 파일에 입력
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
-            if($row['csv_downloaded'] == 0 && $row['isrefunded'] == 0 && $row['note'] == null) {
-                fputcsv($output, [
-                    $row['order_num'],
-                    $row['esimDays'],
-                    $row['roming_phon_num'],
-                    $row['smdp_address'],
-                    $row['activation_code'],
-                    $row['esim_mapping_id']
-                ]);
-                $sql1 = "UPDATE t_esim_bulk_order_tb SET csv_downloaded = 1 WHERE order_num = '".$row['order_num']."'";
-                $conn->query($sql1);
-            } else{
+            if($row['csv_downloaded'] !== 0 && $row['isrefunded'] !== 0 && $row['note'] !== null) {
                 return;
             }
+            fputcsv($output, [
+                $row['order_num'],
+                $row['esimDays'],
+                $row['roming_phon_num'],
+                $row['smdp_address'],
+                $row['activation_code'],
+                $row['esim_mapping_id']
+            ]);
+            $sql1 = "UPDATE t_esim_bulk_order_tb SET csv_downloaded = 1 WHERE order_num = '".$row['order_num']."'";
+            $conn->query($sql1);
         }
     }
 
