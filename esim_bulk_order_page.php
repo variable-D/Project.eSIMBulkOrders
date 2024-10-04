@@ -87,7 +87,7 @@ if (isset($_POST['download_csv_calculate'])) { // 엑셀 다운로드 버튼 클
                 $row['esimDays'],
                 $row['note'],
                 $isRefunded,
-                $row['roming_phon_num'],
+                "\t".$row['roming_phon_num'],
                 $row['created_at']
             ]);
         }
@@ -147,7 +147,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
             fputcsv($output, [
                 $row['order_num'],
                 $row['esimDays'],
-                $row['roming_phon_num'],
+                "\t".$row['roming_phon_num'],
                 $row['smdp_address'],
                 $row['activation_code'],
                 $row['esim_mapping_id']
