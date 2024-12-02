@@ -189,16 +189,16 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
             <p class="esim_list_sch2-subj">요금제</p>
             <select name="RENTAL_FEE_PROD_ID" id="RENTAL_FEE_PROD_ID" class="input_data" required>
                 <option value="">선택</option>
-                <option value="NA00007679">레드 eSIM 1일(수신불가)</option>
-                <option value="NA00008249">레드 eSIM 3일(수신불가)</option>
-                <option value="NA00008250">레드 eSIM 5일(수신불가)</option>
-                <option value="NA00008777">레드 eSIM 7일(수신불가)</option>
-                <option value="NA00008251">레드 eSIM 10일(수신불가)</option>
-                <option value="NA00008778">레드 eSIM 15일(수신불가)</option>
-                <option value="NA00008252">레드 eSIM 20일(수신불가)</option>
-                <option value="NA00008253">레드 eSIM 30일(수신불가)</option>
-                <option value="NA00008779">레드 eSIM 60일(수신불가)</option>
-                <option value="NA00008780">레드 eSIM 90일(수신불가)</option>
+                <option value="NA00007679">레드 eSIM 1일</option>
+                <option value="NA00008249">레드 eSIM 3일</option>
+                <option value="NA00008250">레드 eSIM 5일</option>
+                <option value="NA00008777">레드 eSIM 7일</option>
+                <option value="NA00008251">레드 eSIM 10일</option>
+                <option value="NA00008778">레드 eSIM 15일</option>
+                <option value="NA00008252">레드 eSIM 20일</option>
+                <option value="NA00008253">레드 eSIM 30일</option>
+                <option value="NA00008779">레드 eSIM 60일</option>
+                <option value="NA00008780">레드 eSIM 90일</option>
             </select>
         </li>
         <li class="esim_list_sch2_submit">
@@ -305,7 +305,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
                                 <?php echo $order_num; ?>
                             </a>
                         </td>
-                        <td align="center">레드 eSIM <?php echo $esimDays; ?>일(수신불가)</td>
+                        <td align="center">레드 eSIM <?php echo $esimDays; ?>일</td>
                         <td align="center">
                             <!-- 각 note 필드를 개별적으로 수정 가능 -->
                             <textarea name="note_content" rows="3" cols="30"><?php echo htmlspecialchars($row["note"]); ?></textarea>
@@ -438,4 +438,4 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
 </script>
 
 </body>
-</html>
+<
