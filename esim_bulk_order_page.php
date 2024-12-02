@@ -47,7 +47,7 @@ if (isset($_POST['download_csv_calculate'])) { // 엑셀 다운로드 버튼 클
 
     // SQL 쿼리
     $sql = "SELECT order_num, roming_phon_num, created_at, isrefunded, note, esimDays
-            FROM t_esim_bulk_order_tb 
+            FROM t_esim_bulk_order_tb
             WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
 
     if ($varSearch_order_id != '') {
@@ -87,7 +87,7 @@ if (isset($_POST['download_csv_calculate'])) { // 엑셀 다운로드 버튼 클
                 $row['esimDays'],
                 $row['note'],
                 $isRefunded,
-                "\t".$row['roming_phon_num'],
+                $row['roming_phon_num'],
                 $row['created_at']
             ]);
         }
@@ -109,7 +109,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
 
     // SQL 쿼리
     $sql = "SELECT order_num, roming_phon_num, esimDays, smdp_address, activation_code, esim_mapping_id, isrefunded, note
-            FROM t_esim_bulk_order_tb 
+            FROM t_esim_bulk_order_tb
             WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime' AND csv_downloaded = 0";
 
     if ($varSearch_order_id != '') {
@@ -147,7 +147,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
             fputcsv($output, [
                 $row['order_num'],
                 $row['esimDays'],
-                "\t".$row['roming_phon_num'],
+                $row['roming_phon_num'],
                 $row['smdp_address'],
                 $row['activation_code'],
                 $row['esim_mapping_id']
@@ -190,15 +190,15 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
             <select name="RENTAL_FEE_PROD_ID" id="RENTAL_FEE_PROD_ID" class="input_data" required>
                 <option value="">선택</option>
                 <option value="NA00007679">레드 eSIM 1일(수신불가)</option>
-                <option value="NA00007680">레드 eSIM 3일(수신불가)</option>
-                <option value="NA00007681">레드 eSIM 5일(수신불가)</option>
-                <option value="NA00008761">레드 eSIM 7일(수신불가)</option>
-                <option value="NA00007682">레드 eSIM 10일(수신불가)</option>
-                <option value="NA00008762">레드 eSIM 15일(수신불가)</option>
-                <option value="NA00007683">레드 eSIM 20일(수신불가)</option>
-                <option value="NA00007684">레드 eSIM 30일(수신불가)</option>
-                <option value="NA00008763">레드 eSIM 60일(수신불가)</option>
-                <option value="NA00008764">레드 eSIM 90일(수신불가)</option>
+                <option value="NA00008249">레드 eSIM 3일(수신불가)</option>
+                <option value="NA00008250">레드 eSIM 5일(수신불가)</option>
+                <option value="NA00008777">레드 eSIM 7일(수신불가)</option>
+                <option value="NA00008251">레드 eSIM 10일(수신불가)</option>
+                <option value="NA00008778">레드 eSIM 15일(수신불가)</option>
+                <option value="NA00008252">레드 eSIM 20일(수신불가)</option>
+                <option value="NA00008253">레드 eSIM 30일(수신불가)</option>
+                <option value="NA00008779">레드 eSIM 60일(수신불가)</option>
+                <option value="NA00008780">레드 eSIM 90일(수신불가)</option>
             </select>
         </li>
         <li class="esim_list_sch2_submit">
@@ -245,13 +245,13 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
     // SQL 쿼리 생성
     if ($varSearch_order_id != '') {
         // 주문번호나 CTN으로 검색 시 날짜 조건을 무시합니다.
-        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, isrefunded, csv_downloaded
-                FROM t_esim_bulk_order_tb 
+        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, isrefunded, csv_downloaded, rental_mgmt_num
+                FROM t_esim_bulk_order_tb
                 WHERE (order_num LIKE '%$varSearch_order_id%' OR roming_phon_num LIKE '%$varSearch_order_id%')";
     } else {
         // 날짜로 검색
-        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, isrefunded, csv_downloaded
-                FROM t_esim_bulk_order_tb 
+        $sql = "SELECT id, order_num, esimDays, rental_mst_num, created_at, roming_phon_num, esim_mapping_id, note, isrefunded, csv_downloaded, rental_mgmt_num
+                FROM t_esim_bulk_order_tb
                 WHERE created_at BETWEEN '$varStartDt' AND '$endDtWithTime'";
     }
     $sql .= " ORDER BY id DESC";
@@ -272,6 +272,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
                 <th width="120">csvDownloaded</th>
                 <th width="150">API 요청시간</th>
                 <th width="120">CTN</th>
+                <th width="120">Rental_Mgmt_Num</th>
                 <th width="300">QR Code Data</th>
             </tr>
             </thead>
@@ -324,6 +325,7 @@ if (isset($_POST['download_csv_order'])) { // 엑셀 다운로드 버튼 클릭 
                         </td>
                         <td align="center"><?php echo htmlspecialchars($row["created_at"]); ?></td>
                         <td align="center"><?php echo $roming_phon_num; ?></td>
+                        <td align="center"><?php echo htmlspecialchars($row["rental_mgmt_num"]); ?></td>
                         <td align="center"><?php echo htmlspecialchars($row["esim_mapping_id"]); ?></td>
                     </tr>
                 </form>

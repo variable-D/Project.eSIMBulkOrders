@@ -139,6 +139,7 @@ foreach ($resData['OUT1'] as $index => $item) {
     $eqp_ser_num = $item['EQP_SER_NUM'];
     $roming_phon_num = $item['ROMING_PHON_NUM'];
     $roming_num = $item['ROMING_NUM'];
+    $rental_mgmt_num = $item['RENTAL_MGMT_NUM'];
 
     // ESIM_MAPPING_ID를 '$' 기준으로 나누기
     $parts = explode('$', $esim_mapping_id, 3); // 최대 3개의 부분으로 분리
@@ -154,7 +155,7 @@ foreach ($resData['OUT1'] as $index => $item) {
     }
 
     // DB 저장
-    $stmt = $conn->prepare("INSERT INTO t_esim_bulk_order_tb (order_num, esimDays, rental_mst_num, eqp_mdl_cd, esim_mapping_id, eqp_ser_num, roming_phon_num, roming_num, smdp_address, activation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO t_esim_bulk_order_tb (order_num, esimDays, rental_mst_num, eqp_mdl_cd, esim_mapping_id, eqp_ser_num, roming_phon_num, roming_num, smdp_address, activation_code,rental_mgmt_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     if (!$stmt) {
         echo "쿼리 준비 실패: " . $conn->error;
@@ -162,7 +163,7 @@ foreach ($resData['OUT1'] as $index => $item) {
     }
 
     // bind_param에서 smdp_address와 activation_code 추가
-    $stmt->bind_param("ssssssssss", $rsv_vou_num, $esimDays, $rental_mst_num, $eqp_mdl_cd, $esim_mapping_id, $eqp_ser_num, $roming_phon_num, $roming_num, $smdp_address, $activation_code);
+    $stmt->bind_param("sssssssssss", $rsv_vou_num, $esimDays, $rental_mst_num, $eqp_mdl_cd, $esim_mapping_id, $eqp_ser_num, $roming_phon_num, $roming_num, $smdp_address, $activation_code,$rental_mgmt_num);
 
     if (!$stmt->execute()) {
         echo "DB 저장 오류: " . $stmt->error;
